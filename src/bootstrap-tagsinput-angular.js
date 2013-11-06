@@ -27,14 +27,27 @@ angular.module('bootstrap-tagsinput', [])
 
         var select = $('select', element);
 
-        select.tagsinput({
+        if (element.attr('placeholder')) {
+          select.attr('placeholder', element.attr('placeholder'));
+        }
+
+        var options = {
           typeahead : {
-            source   : angular.isFunction(scope.$parent[attrs.typeaheadSource]) ? scope.$parent[attrs.typeaheadSource] : null
+            source : angular.isFunction(scope.$parent[attrs.typeaheadSource]) ? scope.$parent[attrs.typeaheadSource] : null,
+            matcher : angular.isFunction(scope.$parent[attrs.typeaheadMatcher]) ? scope.$parent[attrs.typeaheadMatcher] : null,
+            highlighter : angular.isFunction(scope.$parent[attrs.typeaheadHighlighter]) ? scope.$parent[attrs.typeaheadHighlighter] : null
           },
-          itemValue: getItemProperty(scope, attrs.itemvalue),
-          itemText : getItemProperty(scope, attrs.itemtext),
-          tagClass : angular.isFunction(scope.$parent[attrs.tagclass]) ? scope.$parent[attrs.tagclass] : function(item) { return attrs.tagclass; }
-        });
+          itemValue : getItemProperty(scope, attrs.itemvalue),
+          itemText : getItemProperty(scope, attrs.itemtext)
+        };
+        if (attrs.tagclass) {
+          options.tagClass = angular.isFunction(scope.$parent[attrs.tagclass]) ? scope.$parent[attrs.tagclass] : function(item) { return attrs.tagclass; };
+        }
+        if (attrs.maxWidth) {
+          options.maxWidth = attrs.maxWidth;
+        }
+
+        select.tagsinput(options);
 
         for (var i = 0; i < scope.model.length; i++) {
           select.tagsinput('add', scope.model[i]);

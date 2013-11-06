@@ -33,8 +33,9 @@
     this.objectItems = options && options.itemValue;
     this.placeholderText = element.hasAttribute('placeholder') ? this.$element.attr('placeholder') : '';
     this.inputSize = Math.max(1, this.placeholderText.length);
+    this.divStyle = options && options.maxWidth ? 'style="max-width: ' + options.maxWidth + '"' : '';
 
-    this.$container = $('<div class="bootstrap-tagsinput"></div>');
+    this.$container = $('<div ' + this.divStyle + ' class="bootstrap-tagsinput"></div>');
     this.$input = $('<input size="' + this.inputSize + '" type="text" placeholder="' + this.placeholderText + '"/>').appendTo(this.$container);
 
     this.$element.after(this.$container);
@@ -187,17 +188,17 @@
             itemText = self.options.itemText(item),
             tagClass = self.options.tagClass(item);
 
-          // Update tag's class and inner text
-          $tag.attr('class', null);
-          $tag.addClass('tag ' + htmlEncode(tagClass));
-          $tag.contents().filter(function() {
-            return this.nodeType == 3;
-          })[0].nodeValue = htmlEncode(itemText);
+        // Update tag's class and inner text
+        $tag.attr('class', null);
+        $tag.addClass('tag ' + htmlEncode(tagClass));
+        $tag.contents().filter(function() {
+          return this.nodeType == 3;
+        })[0].nodeValue = htmlEncode(itemText);
 
-          if (self.isSelect) {
-            var option = $('option', self.$element).filter(function() { return $(this).data('item') === item; });
-            option.attr('value', itemValue);
-          }
+        if (self.isSelect) {
+          var option = $('option', self.$element).filter(function() { return $(this).data('item') === item; });
+          option.attr('value', itemValue);
+        }
       });
     },
 
@@ -208,9 +209,19 @@
       return this.itemsArray;
     },
 
+    contains: function(item) {
+      var self = this;
+      for (var i = 0; i < this.itemsArray.length; i++) {
+        if (self.options.itemValue(this.itemsArray[i]) === self.options.itemValue(item)) {
+          return true;
+        }
+      }
+      return false;
+    },
+
     /**
      * Assembly value by retrieving the value of each item, and set it on the
-     * element. 
+     * element.
      */
     pushVal: function() {
       var self = this,
@@ -248,14 +259,14 @@
         self.$input.typeahead({
           source: function (query, process) {
             function processItems(items) {
-              var texts = [];
+              var values = [];
 
               for (var i = 0; i < items.length; i++) {
-                var text = self.options.itemText(items[i]);
-                map[text] = items[i];
-                texts.push(text);
+                var value = self.options.itemValue(items[i]);
+                map[value] = items[i];
+                values.push(value);
               }
-              process(texts);
+              process(values);
             }
 
             this.map = {};
@@ -265,35 +276,36 @@
             if ($.isFunction(data.success)) {
               // support for Angular promises
               data.success(processItems);
+            } else if ($.isFunction(data.then)) {
+              // more support for Angular promises
+              data.then(processItems);
             } else {
               // support for functions and jquery promises
               $.when(data)
-               .then(processItems);
+                  .then(processItems);
             }
           },
-          updater: function (text) {
-            self.add(this.map[text]);
+          updater: function (value) {
+            self.add(this.map[value]);
           },
-          matcher: function (text) {
+          matcher: function (value) {
+            var item = this.map[value];
             if (typeahead.matcher) {
-              return typeahead.matcher(text);
+              return typeahead.matcher(item);
             } else {
-              return (text.toLowerCase().indexOf(this.query.trim().toLowerCase()) !== -1);
+              return !self.contains(item) && (self.options.itemText(item).toLowerCase().indexOf(this.query.trim().toLowerCase()) !== -1);
             }
           },
-          sorter: function (texts) {
-            if (typeahead.sorter) {
-              return typeahead.sorter(texts);
-            } else {
-              return texts.sort();
-            }
+          sorter: function (value) {
+            return value.sort();
           },
-          highlighter: function (text) {
+          highlighter: function (value) {
+            var item = this.map[value];
             if (typeahead.highlighter) {
-              return typeahead.highlighter(text);
+              return typeahead.highlighter(item);
             } else {
               var regex = new RegExp( '(' + this.query + ')', 'gi' );
-              return text.replace( regex, "<strong>$1</strong>" );
+              return self.options.itemText(item).replace( regex, "<strong>$1</strong>" );
             }
           }
         });
@@ -346,7 +358,7 @@
               $input.focus();
             }
             break;
-         default:
+          default:
             // When key corresponds one of the confirmKeys, add current input
             // as a new tag
             if (self.options.freeInput && $.inArray(event.which, self.options.confirmKeys) >= 0) {
@@ -368,7 +380,7 @@
       // Only add existing value as tags when using strings as tags
       if (self.options.itemValue === defaultOptions.itemValue) {
         if (self.$element[0].tagName === 'INPUT') {
-            self.add(self.$element.val());
+          self.add(self.$element.val());
         } else {
           $('option', self.$element).each(function() {
             self.add($(this).attr('value'), true);
@@ -393,7 +405,7 @@
     },
 
     /**
-     * Sets focus on the tagsinput 
+     * Sets focus on the tagsinput
      */
     focus: function() {
       this.$input.focus();
@@ -458,9 +470,9 @@
   };
 
   $.fn.tagsinput.Constructor = TagsInput;
-  
+
   /**
-   * Most options support both a string or number as well as a function as 
+   * Most options support both a string or number as well as a function as
    * option value. This function makes sure that the option with the given
    * key in the given options is wrapped in a function
    */
