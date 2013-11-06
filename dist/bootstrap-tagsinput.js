@@ -275,14 +275,26 @@
             self.add(this.map[text]);
           },
           matcher: function (text) {
-            return (text.toLowerCase().indexOf(this.query.trim().toLowerCase()) !== -1);
+            if (typeahead.matcher) {
+              return typeahead.matcher(text);
+            } else {
+              return (text.toLowerCase().indexOf(this.query.trim().toLowerCase()) !== -1);
+            }
           },
           sorter: function (texts) {
-            return texts.sort();
+            if (typeahead.sorter) {
+              return typeahead.sorter(texts);
+            } else {
+              return texts.sort();
+            }
           },
           highlighter: function (text) {
-            var regex = new RegExp( '(' + this.query + ')', 'gi' );
-            return text.replace( regex, "<strong>$1</strong>" );
+            if (typeahead.highlighter) {
+              return typeahead.highlighter(text);
+            } else {
+              var regex = new RegExp( '(' + this.query + ')', 'gi' );
+              return text.replace( regex, "<strong>$1</strong>" );
+            }
           }
         });
       }
